@@ -10,7 +10,8 @@ Due to Windows library compatibility issues with the older NeMo ASR toolkit, thi
 
 - **Windows 10/11** with **WSL (Windows Subsystem for Linux)** installed (Ubuntu 24.04 recommended).
 - **Python 3.11/3.12** installed on both Windows and WSL.
-- **IMPORTANT: Download the Model:** You must download the `indicconformer_stt_multi_hybrid_rnnt_600m.nemo` : LINK : https://github.com/AI4Bharat/IndicConformerASR?tab=readme-ov-file
+- **IMPORTANT: Download the Model:** You must download the `indicconformer_stt_multi_hybrid_rnnt_600m.nemo`
+- LINK : https://github.com/AI4Bharat/IndicConformerASR?tab=readme-ov-file
 
 ## Installation & Setup
 

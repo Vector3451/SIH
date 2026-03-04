@@ -29,7 +29,7 @@ def process_audio(audio_path):
         if "error" in data:
             return f"Transcription Error: {data['error']}", "Error"
             
-        transcript_text = data.get("text", "")
+        transcript_text = data.get("transcript") or data.get("text", "")
         
         if not transcript_text:
             return "No transcription returned.", "No transcription returned."
@@ -65,7 +65,7 @@ with gr.Blocks(title="Indic Speech to English Translator") as app:
     gr.Markdown("Speak into the microphone. The audio is sent to WSL for transcription, and translated into English here.")
     
     with gr.Row():
-        audio_input = gr.Audio(sources=["microphone"], type="filepath", label="Microphone Input")
+        audio_input = gr.Audio(sources=["microphone", "upload"], type="filepath", label="Audio Input")
         
     with gr.Row():
         transcription_output = gr.Textbox(label="Indic Transcription", lines=3)

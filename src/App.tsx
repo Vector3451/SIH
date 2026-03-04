@@ -67,6 +67,49 @@ function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // Toggle body class so CSS can clear all blocking backgrounds when on home
+  useEffect(() => {
+    if (activeTab === 'home') {
+      document.body.classList.add('home-bg');
+    } else {
+      document.body.classList.remove('home-bg');
+    }
+  }, [activeTab]);
+
+  // Handle Google OAuth callback params: ?auth_token=...&user=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authToken = params.get('auth_token');
+    const userJson = params.get('user');
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      const msgs: Record<string, string> = {
+        google_not_configured: 'Google login is not yet configured on this server. Please sign in with email.',
+        google_denied: 'Google sign-in was cancelled.',
+        google_failed: 'Google sign-in failed. Please try again.',
+      };
+      alert(msgs[oauthError] || 'Sign-in error: ' + oauthError);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    if (authToken && userJson) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userJson));
+        localStorage.setItem('authToken', authToken);
+        localStorage.setItem('civicUser', JSON.stringify(userData));
+        localStorage.setItem('currentUser', userData.username);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+        setUser(userData);
+        showNotification(`Welcome, ${userData.username}! 🇮🇳`, 'success');
+      } catch {
+        // Bad token, ignore
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
+
   const tabs = ['home', 'feed'];
 
   const navigateToTab = (direction: 'left' | 'right') => {
@@ -191,7 +234,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      <div className={`min-h-screen transition-colors duration-300 ${activeTab === 'home' ? 'bg-transparent' : 'bg-gray-50 dark:bg-gray-900'}`}>
         <div className={`${showReportModal ? 'blur-sm pointer-events-none' : ''} transition-all duration-300`}>
           <Header activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
 
@@ -266,7 +309,8 @@ function App() {
                 onClick={() =>
                   setActiveTab(activeTab === 'helpline' ? 'home' : activeTab === 'home' ? 'helpline' : 'home')
                 }
-                className={`flex flex-col items-center py-1 px-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${activeTab === 'home' ? 'text-blue-600 bg-gray-100 dark:bg-gray-700 transform scale-105'
+                className={`flex flex-col items-center py-1 px-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${activeTab === 'home'
+                  ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 transform scale-105'
                   : activeTab === 'helpline' ? 'text-purple-600 bg-gray-100 dark:bg-gray-700 transform scale-105'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
@@ -304,7 +348,7 @@ function App() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex flex-col items-center py-1 px-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${activeTab === tab.id
-                    ? `${tab.color} bg-gray-100 dark:bg-gray-700 transform scale-105`
+                    ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 transform scale-105'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                 >

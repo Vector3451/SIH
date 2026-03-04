@@ -70,8 +70,11 @@ import nemo.collections.asr as nemo_asr  # noqa: E402
 from fastapi import FastAPI, UploadFile, File
 import shutil
 import os
-
-app = FastAPI()
+try:
+    from translate import Translator
+    translator = Translator(to_lang="en")
+except ImportError:
+    translator = None
 
 MODEL_PATH = "/mnt/d/College/Translator/indicconformer_stt_multi_hybrid_rnnt_600m.nemo"
 
@@ -149,14 +152,18 @@ except Exception as e:
 
 
 @app.post("/transcribe")
-async def transcribe(audio: UploadFile = File(...)):
+async def transcribe(audio: UploadFile = File(None), file: UploadFile = File(None)):
+    audio_file = audio or file
+    if not audio_file:
+        return {"error": "No audio file provided."}
+    
     if not asr_model:
         return {"error": "Model not loaded on the server."}
 
-    temp_path = f"/tmp/{audio.filename}"
+    temp_path = f"/tmp/{audio_file.filename}"
     try:
         with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(audio.file, buffer)
+            shutil.copyfileobj(audio_file.file, buffer)
 
         result = asr_model.transcribe([temp_path])
 
@@ -166,11 +173,32 @@ async def transcribe(audio: UploadFile = File(...)):
         else:
             transcripts = result
 
-        text = transcripts[0] if isinstance(transcripts, list) else str(transcripts)
-        return {"text": text}
-
-    except Exception as e:
-        return {"error": str(e)}
+        transcript_text = transcripts[0] if isinstance(transcripts, list) else str(transcripts)
+        
+        translation = ""
+        if translator and transcript_text:
+            try:
+                # Simple translation (for longer texts, chunking might be needed as in app.py)
+                if len(transcript_text) > 490:
+                    words, chunks, current = transcript_text.split(), [], ""
+                    for word in words:
+                        if len(current) + len(word) + 1 > 490:
+                            chunks.append(current.strip())
+                            current = word
+                        else:
+                            current += (" " + word if current else word)
+                    if current:
+                        chunks.append(current.strip())
+                    translation = " ".join(translator.translate(chunk) for chunk in chunks)
+                else:
+                    translation = translator.translate(transcript_text)
+            except Exception as e:
+                translation = f"[Translation Error: {e}]"
+        
+        return {
+            "transcript": transcript_text,
+            "translation": translation
+        }
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
